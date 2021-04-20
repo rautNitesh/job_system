@@ -12,8 +12,6 @@ idna==2.10
 joblib==0.16.0
 nltk==3.5
 numpy==1.19.1
-pandas==0.23.2
-Pillow==7.2.0
 PyJWT==1.7.1
 PyPDF2==1.26.0
 python-dateutil==2.8.1
@@ -25,3 +23,6 @@ sqlparse==0.3.1
 tqdm==4.48.2
 typing==3.7.4.3
 urllib3==1.25.10
+
+pandas==0.23.2
+Pillow==7.2.0

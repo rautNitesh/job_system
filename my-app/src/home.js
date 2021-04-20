@@ -148,10 +148,26 @@ function ClippedDrawer(props) {
     }
 
     const getJobs = () => {
-        const API_URL = 'https://api.adzuna.com/v1/api/jobs/au/search/1?app_id=170a278c&app_key=14c6ba39db072dd540d0dfdb40e57c12&what=' + searchValue;
-        Axios.get(API_URL).then((resp) => {
-            setJobList([...resp.data.results])
-        });
+         Axios.get('http://localhost:8000/api/v2/persons?user=' + localStorage.getItem('user'))
+        .then((response) => {
+            // this.setState({
+                //     name: response.data[0].name,
+                //     location: response.data[0].location,
+                //     desc: response.data[0].desc,
+                //     type: response.data[0].type,
+                //     skills: response.data[0].skills,
+                //     skills_names: response.data[0].skills_names,
+                // });
+                // this.resume = response.data[0].resume;
+                const value = response?.data[0]?.skills_names.join(" ") || '';
+                setSearchValue(value);
+                const key_value = encodeURI(value);
+                const API_URL = 'https://api.adzuna.com/v1/api/jobs/au/search/1?app_id=170a278c&app_key=14c6ba39db072dd540d0dfdb40e57c12&what=' + key_value.slice(0,20);
+                 Axios.get(API_URL).then((resp) => {
+                     console.log(resp)
+                    setJobList([...resp.data.results])
+                });
+            });
     }
 
     const getSavedJobs = () => {
@@ -240,7 +256,7 @@ function ClippedDrawer(props) {
                 <Toolbar>
 
                         <Typography variant="h6" noWrap>
-                            Brighter Bee
+                            Job Recommendation System
                         </Typography>
 
                         {showSearch && <div className={classes.search}>

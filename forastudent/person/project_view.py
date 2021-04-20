@@ -7,6 +7,10 @@ import PyPDF2
 import io
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+import slate3k as slate
+from tika import parser
+import textract
+import urllib.request
 
 stop_words = set(stopwords.words('english'))
 
@@ -15,7 +19,9 @@ def extract_data(pdf_file, page):
     pdfReader = PyPDF2.PdfFileReader(pdf_file)
     pageObj = pdfReader.getPage(page)
     data = pageObj.extractText()
+    print(data)
     return data
+    
 
 
 def get_page_count(pdf_file):
@@ -34,22 +40,11 @@ def recommend_project(request, person_id):
 
     user = requests.get("http://localhost:8000/api/v2/persons?user={}".format(person_id))
     user = user.json()
+    print(user)
     user = pd.DataFrame.from_records(user)
-
-    pdfFile = requests.get(user['resume'][0])
-    pdfFile = io.BytesIO(pdfFile.content)
-    numPages = get_page_count(pdfFile)
-
-    resume_desc = []
-
-    for i in range(numPages):
-        text = extract_data(pdfFile, i)
-        resume_desc.append(text)
-
-    for i in range(len(resume_desc)):
-        resume_desc[i] = resume_desc[i].split()
-
-    resume_desc = [item for sublist in resume_desc for item in sublist]
+    pdfFile = user['desc'][0]
+    resume_desc= pdfFile.split()
+    print(pdfFile)
 
     common_skills = []
     similarity_score = []
@@ -60,16 +55,14 @@ def recommend_project(request, person_id):
         proj_desc = word_tokenize(row['desc'])
         proj_desc = [word.lower() for word in proj_desc]
         proj_desc = [w for w in proj_desc if w not in stop_words and w not in (',', '.', '(', ')', '[', ']')]
-
         resume_desc = [word.lower() for word in resume_desc]
-        resume_desc = [w for w in resume_desc if w not in stop_words and w not in (',', '.', '(', ')', '[', ']')]
-
+        # resume_desc = [w for w in resume_desc if w not in stop_words and w not in (',', '.', '(', ')', '[', ']')]
         similarity = len(set(proj_desc) & set(resume_desc)) / float(len(set(proj_desc) | set(resume_desc))) * 100
         similarity_score.append(similarity)
+    print(similarity_score)
 
     projs['common_skills'] = common_skills
     projs['similarity_score'] = similarity_score
-
     # map skill id to skill name
     skills = requests.get("http://localhost:8000/api/v2/skills")
     skills = skills.json()
@@ -81,7 +74,7 @@ def recommend_project(request, person_id):
             skill_name_temp = skills[(skills['id'] == s)]['name'].astype('str').values
             skill_name.append(skill_name_temp[0])
         skill_name = ', '.join(skill_name)
-        projs.set_value(index, 'skills', skill_name)
+        projs.at[index, 'skills']=skill_name
 
     # format date
     projs['start_date'] = projs['start_date'].str[:10]
@@ -96,7 +89,6 @@ def recommend_project(request, person_id):
         new_desc_arr.append(new_desc)
 
     projs['short_desc'] = new_desc_arr
-
     projs = projs.sort_values(['common_skills', 'similarity_score'], ascending=False)
 
     # get top 5 projects
